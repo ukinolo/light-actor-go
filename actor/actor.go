@@ -1,7 +1,7 @@
 package actor
 
-type Producer func() Receiver
+type ActorProducer func() Actor
 
-type Receiver interface {
+type Actor interface {
 	Recieve(ctx actorContext)
 }

@@ -15,12 +15,11 @@ const (
 // ActorContext holds the state and context of an actor
 type actorContext struct {
 	actorSystem *ActorSystem
-	actor       Receiver
+	actor       Actor
 	ctx         context.Context
 	props       *Props
-	message     Envelope
+	envelope    Envelope
 	state       actorState
-	mailboxChan chan interface{}
 	behavior    *Behavior // Add behavior as an attribute
 }
 
@@ -31,7 +30,6 @@ func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *Props
 	context.props = props
 	context.state = actorStart
 	context.actorSystem = actorSystem
-	context.mailboxChan = make(chan interface{}, 1)
 	context.behavior = NewBehavior() // Initialize behavior
 	return context
 }
@@ -42,13 +40,13 @@ func (ctx *actorContext) Context() context.Context {
 }
 
 // Actor returns the actor associated with the actorContext
-func (ctx *actorContext) Actor() Receiver {
+func (ctx *actorContext) Actor() Actor {
 	return ctx.actor
 }
 
 // Message returns the current message being processed
-func (ctx *actorContext) Message() Envelope {
-	return ctx.message
+func (ctx *actorContext) Envelope() Envelope {
+	return ctx.envelope
 }
 
 // State returns the current state of the actor

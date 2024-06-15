@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package remote;
+
+import "google/protobuf/any.proto";
+
+option go_package = ".";
+
+service RemoteHandler {
+  rpc SendMessage (MessageWrapper) returns (Empty);
+  rpc ReceiveMessage (MessageRequest) returns (stream MessageWrapper);
+}
+
+message MessageWrapper {
+  google.protobuf.Any message = 1;
+  string receiver = 2;
+}
+
+message Empty {}
+
+message MessageRequest {
+  string receiver = 1;
+}

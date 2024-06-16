@@ -3,12 +3,12 @@ package actor
 import "github.com/google/uuid"
 
 type Envelope struct {
-	sender   uuid.UUID
+	sender   PID
 	message  interface{}
-	receiver uuid.UUID
+	receiver PID
 }
 
-func NewEnvelope(sender uuid.UUID, message interface{}, receiver uuid.UUID) *Envelope {
+func NewEnvelope(sender PID, message interface{}, receiver PID) *Envelope {
 	return &Envelope{
 		sender:   sender,
 		message:  message,
@@ -16,31 +16,31 @@ func NewEnvelope(sender uuid.UUID, message interface{}, receiver uuid.UUID) *Env
 	}
 }
 
-func (e *Envelope) Sender() *uuid.UUID {
-	if e.sender == uuid.Nil {
+func (e *Envelope) Sender() *PID {
+	if e.sender.ID == uuid.Nil {
 		return nil
 	}
 	return &e.sender
 }
 
-func (e *Envelope) Receiver() *uuid.UUID {
-	if e.receiver == uuid.Nil {
+func (e *Envelope) Receiver() *PID {
+	if e.receiver.ID == uuid.Nil {
 		return nil
 	}
 	return &e.receiver
 }
 
-func (e *Envelope) Unwrap() (*uuid.UUID, interface{}, *uuid.UUID) {
-	var sender *uuid.UUID
-	var receiver *uuid.UUID
+func (e *Envelope) Unwrap() (*PID, interface{}, *PID) {
+	var sender *PID
+	var receiver *PID
 
-	if e.sender != uuid.Nil {
+	if e.sender.ID != uuid.Nil {
 		sender = &e.sender
 	} else {
 		sender = nil
 	}
 
-	if e.receiver == uuid.Nil {
+	if e.receiver.ID == uuid.Nil {
 		receiver = &e.receiver
 	} else {
 		receiver = nil

@@ -1,14 +1,9 @@
 package actor
 
-import (
-	"sync"
-)
-
 type Mailbox struct {
 	actorChan   chan Envelope
 	mailboxChan chan Envelope
 	queue       []Envelope
-	queueMutex  sync.Mutex
 	running     bool
 	stopChan    chan struct{}
 }
@@ -36,8 +31,6 @@ func (m *Mailbox) Send(msg Envelope) {
 
 // Adds a message to the mailbox queue.
 func (m *Mailbox) Buffer(msg Envelope) {
-	m.queueMutex.Lock()
-	defer m.queueMutex.Unlock()
 	m.queue = append(m.queue, msg)
 }
 
@@ -53,11 +46,9 @@ func (m *Mailbox) Start() {
 			case msg := <-m.mailboxChan:
 				m.Receive(msg)
 			default:
-				m.queueMutex.Lock()
 				if len(m.queue) > 0 {
 					m.dispatchMessages()
 				}
-				m.queueMutex.Unlock()
 			}
 		}
 	}()
@@ -72,8 +63,6 @@ func (m *Mailbox) Stop() {
 
 // Receive enqueues a message from the mailbox channel into the queue.
 func (m *Mailbox) Receive(msg Envelope) {
-	m.queueMutex.Lock()
-	defer m.queueMutex.Unlock()
 	m.queue = append(m.queue, msg)
 	m.dispatchMessages()
 }

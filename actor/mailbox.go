@@ -4,79 +4,52 @@ type Mailbox struct {
 	actorChan   chan Envelope
 	mailboxChan chan Envelope
 	queue       []Envelope
-	running     bool
-	stopChan    chan struct{}
 }
 
-// Creates a new Mailbox instance.
-func NewMailbox(actorChan chan Envelope, mailboxChan chan Envelope) *Mailbox {
-	return &Mailbox{
+func NewMailbox(actorChan chan Envelope) *Mailbox {
+	m := &Mailbox{
 		actorChan:   actorChan,
-		mailboxChan: mailboxChan,
+		mailboxChan: make(chan Envelope),
 		queue:       make([]Envelope, 0),
-		stopChan:    make(chan struct{}),
 	}
+	return m
 }
 
-// Attempts to send a message to the actorChan, or buffers it if the channel is full.
-func (m *Mailbox) Send(msg Envelope) {
-	select {
-	case m.actorChan <- msg:
-		// Successfully sent the message to the actorChan
-	default:
-		// The actorChan is full, buffer the message
-		m.Buffer(msg)
-	}
-}
-
-// Adds a message to the mailbox queue.
-func (m *Mailbox) Buffer(msg Envelope) {
+func (m *Mailbox) buffer(msg Envelope) {
 	m.queue = append(m.queue, msg)
 }
 
-// Begins the mailbox's message dispatching loop.
+func (m *Mailbox) getEnvelope() Envelope {
+	defer func() {
+		m.queue = m.queue[1:]
+	}()
+	return m.queue[0]
+}
+
 func (m *Mailbox) Start() {
-	m.running = true
-	go func() {
-		for {
-			select {
-			case <-m.stopChan:
-				m.running = false
-				return
-			case msg := <-m.mailboxChan:
-				m.Receive(msg)
-			default:
-				if len(m.queue) > 0 {
-					m.dispatchMessages()
-				}
+	var newEnvelope Envelope
+	var haveReady bool = false
+	fn := func() Envelope {
+		if !haveReady {
+			haveReady = true
+			if len(m.queue) > 0 {
+				newEnvelope = m.getEnvelope()
+			} else {
+				newEnvelope = <-m.mailboxChan
 			}
 		}
-	}()
-}
-
-// Stop halts the mailbox's message dispatching loop.
-func (m *Mailbox) Stop() {
-	if m.running {
-		close(m.stopChan)
+		return newEnvelope
 	}
-}
-
-// Receive enqueues a message from the mailbox channel into the queue.
-func (m *Mailbox) Receive(msg Envelope) {
-	m.queue = append(m.queue, msg)
-	m.dispatchMessages()
-}
-
-// Attempts to send all buffered messages to the actorChan.
-func (m *Mailbox) dispatchMessages() {
-	for len(m.queue) > 0 {
+	for {
 		select {
-		case m.actorChan <- m.queue[0]:
-			// Successfully sent the message to the actorChan, remove it from the queue
-			m.queue = m.queue[1:]
-		default:
-			// The actorChan is full, stop attempting to send
-			return
+		case m.actorChan <- fn():
+			haveReady = false
+		case envelope := <-m.mailboxChan:
+			m.buffer(envelope)
 		}
 	}
+}
+
+func (m *Mailbox) GetChan() chan Envelope {
+	return m.mailboxChan
 }

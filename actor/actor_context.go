@@ -15,16 +15,16 @@ const (
 // ActorContext holds the state and context of an actor
 type ActorContext struct {
 	actorSystem *ActorSystem
-	actor       Actor
 	ctx         context.Context
-	props       *Props
+	props       *ActorProps
 	envelope    Envelope
 	state       actorState
-	behavior    *Behavior // Add behavior as an attribute
+	behavior    *Behavior
+	children    []PID
 }
 
 // NewActorContext creates and initializes a new actorContext
-func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *Props) *ActorContext {
+func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps) *ActorContext {
 	context := new(ActorContext)
 	context.ctx = ctx
 	context.props = props
@@ -34,14 +34,34 @@ func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *Props
 	return context
 }
 
+// Adds envelope to the current actor context
+func (ctx *ActorContext) AddEnvelope(envelope Envelope) {
+	ctx.envelope = envelope
+}
+
+// Spawns child actor
+func (ctx *ActorContext) SpawnActor(actor Actor) (PID, error) {
+	id, err := NewPID()
+	if err != nil {
+		return PID{}, err
+	}
+	ctx.children = append(ctx.children, id)
+	return id, nil
+}
+
+// Send message
+func (ctx *ActorContext) Send(message interface{}, reciever PID) {
+	sendEnvelope := NewEnvelope(message, reciever)
+	ctx.actorSystem.Send(*sendEnvelope)
+}
+
+func (ctx *ActorContext) Message() interface{} {
+	return ctx.envelope.message
+}
+
 // Context returns the context attached to the actorContext
 func (ctx *ActorContext) Context() context.Context {
 	return ctx.ctx
-}
-
-// Actor returns the actor associated with the actorContext
-func (ctx *ActorContext) Actor() Actor {
-	return ctx.actor
 }
 
 // Message returns the current message being processed
@@ -67,9 +87,4 @@ func (ctx *ActorContext) BecomeStacked(receive ReceiveFunc) {
 // UnbecomeStacked removes the top behavior from the behavior stack
 func (ctx *ActorContext) UnbecomeStacked() {
 	ctx.behavior.UnbecomeStacked()
-}
-
-// Receive processes a message using the current behavior
-func (ctx *ActorContext) Receive() {
-	ctx.behavior.Receive(*ctx)
 }

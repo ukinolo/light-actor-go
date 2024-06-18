@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"context"
 	"light-actor-go/remote"
 )
 
@@ -19,7 +20,9 @@ func NewRemoteActorSystem(remoteConfig remote.RemoteConfig) *ActorSystem {
 	return &ActorSystem{remoteHandler: remote.NewRemoteHandler(&remoteConfig), registry: NewRegistry()}
 }
 
-func (system *ActorSystem) SpawnActor(a Actor) (PID, error) {
+func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error) {
+	prop := ConfigureActorProps(props...)
+
 	actorChan := make(chan Envelope)
 	mailbox := NewMailbox(actorChan)
 
@@ -29,10 +32,12 @@ func (system *ActorSystem) SpawnActor(a Actor) (PID, error) {
 	//Start actor in separate gorutine
 	StartWorker(func() {
 		//Setup basic actor context
+		actorContext := NewActorContext(context.Background(), system, prop)
 		for {
-			<-actorChan
+			envelope := <-actorChan
 			//Set only message and send
-			a.Recieve(ActorContext{})
+			actorContext.AddEnvelope(envelope)
+			a.Recieve(*actorContext)
 		}
 	}, nil)
 
@@ -48,11 +53,11 @@ func (system *ActorSystem) SpawnActor(a Actor) (PID, error) {
 		return mailboxPID, err
 	}
 
-	return mailboxPID, err
+	return mailboxPID, nil
 }
 
-func (system *ActorSystem) Send(envelope Envelope, reciever PID) {
-	ch := system.registry.Find(reciever)
+func (system *ActorSystem) Send(envelope Envelope) {
+	ch := system.registry.Find(*envelope.Receiver())
 	if ch == nil {
 		return
 	}

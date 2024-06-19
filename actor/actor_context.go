@@ -21,15 +21,17 @@ type ActorContext struct {
 	state       actorState
 	behavior    *Behavior
 	children    []PID
+	self        PID
 }
 
 // NewActorContext creates and initializes a new actorContext
-func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps) *ActorContext {
+func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps, self PID) *ActorContext {
 	context := new(ActorContext)
 	context.ctx = ctx
 	context.props = props
 	context.state = actorStart
 	context.actorSystem = actorSystem
+	context.self = self
 	context.behavior = NewBehavior() // Initialize behavior
 	return context
 }
@@ -40,7 +42,10 @@ func (ctx *ActorContext) AddEnvelope(envelope Envelope) {
 }
 
 // Spawns child actor
-func (ctx *ActorContext) SpawnActor(actor Actor) (PID, error) {
+func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (PID, error) {
+	prop := ConfigureActorProps(props...)
+	prop.AddParent(&ctx.self)
+
 	id, err := NewPID()
 	if err != nil {
 		return PID{}, err

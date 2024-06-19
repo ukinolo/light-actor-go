@@ -17,6 +17,10 @@ func ConfigureActorProps(props ...ActorProps) *ActorProps {
 	return defaultConfig()
 }
 
+func (prop *ActorProps) AddParent(parent *PID) {
+	prop.parent = parent
+}
+
 func defaultConfig() *ActorProps {
 	props := new(ActorProps)
 	props.parent = nil

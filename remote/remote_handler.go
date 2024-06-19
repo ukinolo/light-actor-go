@@ -3,6 +3,7 @@ package remote
 import (
 	"context"
 	"fmt"
+	"light-actor-go/actor"
 	"log"
 	"net"
 
@@ -19,19 +20,21 @@ type RemoteConfig struct {
 
 type RemoteHandler struct {
 	UnimplementedRemoteHandlerServer
-	MessageChan chan *MessageWrapper
-	server      *grpc.Server
-	config      *RemoteConfig
+	MessageChan  chan *MessageWrapper
+	EnvelopeChan chan *actor.Envelope
+	server       *grpc.Server
+	config       *RemoteConfig
 }
 
 func Configure(addr string) *RemoteConfig {
 	return &RemoteConfig{Addr: addr}
 }
 
-func NewRemoteHandler(config *RemoteConfig) *RemoteHandler {
+func NewRemoteHandler(config *RemoteConfig, envelopeChan chan *actor.Envelope) *RemoteHandler {
 	handler := &RemoteHandler{
-		MessageChan: make(chan *MessageWrapper, 100),
-		config:      config,
+		MessageChan:  make(chan *MessageWrapper, 100),
+		EnvelopeChan: envelopeChan,
+		config:       config,
 	}
 
 	go handler.startServer()
@@ -76,7 +79,8 @@ func (r *RemoteHandler) ReceiveMessage(req *MessageRequest, stream RemoteHandler
 		//Ensures that only messages intended for a specific client (based on the receiver UUID) are sent to that client through the gRPC stream
 		if msgUUID == receiverUUID {
 			fmt.Printf("Sending message to receiver: %s\n", msgUUID)
-			//TODO: send message to actor with PID that equals reciverUUID
+			envelope := actor.NewEnvelopeWithoutSender(msg.Message, receiverUUID)
+			r.EnvelopeChan <- envelope
 			if err := stream.Send(msg); err != nil {
 				return err
 			}

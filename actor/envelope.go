@@ -48,3 +48,9 @@ func (e *Envelope) Unwrap() (*uuid.UUID, interface{}, *uuid.UUID) {
 
 	return sender, e.message, receiver
 }
+func NewEnvelopeWithoutSender(message interface{}, receiver uuid.UUID) *Envelope {
+	return &Envelope{
+		message:  message,
+		receiver: receiver,
+	}
+}

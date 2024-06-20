@@ -25,8 +25,5 @@ func (r *Registry) Add(pid pid.PID, ch chan envelope.Envelope) error {
 func (r *Registry) Find(pid pid.PID) chan envelope.Envelope {
 	r.mu.RLock()         // Lock the mutex for reading
 	defer r.mu.RUnlock() // Ensure the mutex is unlocked after the operation
-	if ch, ok := r.mapping[pid]; ok {
-		return ch
-	}
-	return nil
+	return r.mapping[pid]
 }

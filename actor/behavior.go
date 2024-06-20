@@ -1,6 +1,6 @@
 package actor
 
-type ReceiveFunc func(context actorContext)
+type ReceiveFunc func(context ActorContext)
 
 // Behavior represents a stack of ReceiveFunc functions.
 type Behavior struct {
@@ -26,7 +26,7 @@ func (b *Behavior) UnbecomeStacked() {
 	b.pop()
 }
 
-func (b *Behavior) Receive(context actorContext) {
+func (b *Behavior) Receive(context ActorContext) {
 	if behavior, ok := b.peek(); ok {
 		behavior(context)
 	} else {

@@ -1,6 +1,8 @@
 package actor
 
-import "github.com/google/uuid"
+import (
+	"github.com/google/uuid"
+)
 
 type Envelope struct {
 	message  interface{}
@@ -22,16 +24,7 @@ func (e *Envelope) Receiver() *PID {
 }
 
 func (e *Envelope) Unwrap() (interface{}, *PID) {
-
-	var receiver *PID
-
-	if e.receiver.ID == uuid.Nil {
-		receiver = &e.receiver
-	} else {
-		receiver = nil
-	}
-
-	return e.message, receiver
+	return e.message, &e.receiver
 }
 func NewEnvelopeWithoutSender(message interface{}, receiver uuid.UUID) *Envelope {
 	return &Envelope{

@@ -54,7 +54,7 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (pid.PID, er
 			envelope := <-actorChan
 			//Set only message and send
 			actorContext.AddEnvelope(envelope)
-			a.Recieve(*actorContext)
+			a.Receive(*actorContext)
 		}
 	}, nil)
 

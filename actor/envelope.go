@@ -11,8 +11,9 @@ type Envelope struct {
 	receiver pid.PID
 }
 
-func NewEnvelope(message interface{}, receiver pid.PID) *Envelope {
-	return &Envelope{
+
+func NewEnvelope(message interface{}, receiver PID) Envelope {
+	return Envelope{
 		message:  message,
 		receiver: receiver,
 	}

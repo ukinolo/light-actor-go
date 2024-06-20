@@ -81,7 +81,7 @@ func (r *RemoteHandler) ReceiveMessage(req *MessageRequest, stream RemoteHandler
 		if msgUUID == receiverUUID {
 			fmt.Printf("Sending message to receiver: %s\n", msgUUID)
 			envelope := envelope.NewEnvelope(msg.Message, pid.PID{ID: receiverUUID})
-			*r.EnvelopeChan <- *envelope // Updated to send the value through the dereferenced pointer to the channel
+			*r.EnvelopeChan <- envelope // Updated to send the value through the dereferenced pointer to the channel
 			if err := stream.Send(msg); err != nil {
 				return err
 			}

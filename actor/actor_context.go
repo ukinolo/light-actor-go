@@ -57,8 +57,8 @@ func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (pid.PID, 
 }
 
 // Send message
-func (ctx *ActorContext) Send(message interface{}, reciever PID) {
-	sendEnvelope := NewEnvelope(message, reciever)
+func (ctx *ActorContext) Send(message interface{}, reciever pid.PID) {
+	sendEnvelope := envelope.NewEnvelope(message, reciever)
 	ctx.actorSystem.Send(sendEnvelope)
 }
 

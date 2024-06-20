@@ -1,25 +1,27 @@
 package actor
 
+import "light-actor-go/envelope"
+
 type Mailbox struct {
-	actorChan   chan Envelope
-	mailboxChan chan Envelope
-	queue       []Envelope
+	actorChan   chan envelope.Envelope
+	mailboxChan chan envelope.Envelope
+	queue       []envelope.Envelope
 }
 
-func NewMailbox(actorChan chan Envelope) *Mailbox {
+func NewMailbox(actorChan chan envelope.Envelope) *Mailbox {
 	m := &Mailbox{
 		actorChan:   actorChan,
-		mailboxChan: make(chan Envelope),
-		queue:       make([]Envelope, 0),
+		mailboxChan: make(chan envelope.Envelope),
+		queue:       make([]envelope.Envelope, 0),
 	}
 	return m
 }
 
-func (m *Mailbox) buffer(msg Envelope) {
+func (m *Mailbox) buffer(msg envelope.Envelope) {
 	m.queue = append(m.queue, msg)
 }
 
-func (m *Mailbox) getEnvelope() Envelope {
+func (m *Mailbox) getEnvelope() envelope.Envelope {
 	defer func() {
 		m.queue = m.queue[1:]
 	}()
@@ -27,9 +29,9 @@ func (m *Mailbox) getEnvelope() Envelope {
 }
 
 func (m *Mailbox) Start() {
-	var newEnvelope Envelope
+	var newEnvelope envelope.Envelope
 	var haveReady bool = false
-	fn := func() Envelope {
+	fn := func() envelope.Envelope {
 		if !haveReady {
 			haveReady = true
 			if len(m.queue) > 0 {
@@ -50,6 +52,6 @@ func (m *Mailbox) Start() {
 	}
 }
 
-func (m *Mailbox) GetChan() chan Envelope {
+func (m *Mailbox) GetChan() chan envelope.Envelope {
 	return m.mailboxChan
 }

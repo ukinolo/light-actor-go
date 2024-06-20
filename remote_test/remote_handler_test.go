@@ -1,7 +1,7 @@
 package remote_test
 
 import (
-	"light-actor-go/actor"
+	"light-actor-go/envelope"
 	"light-actor-go/remote"
 	"testing"
 	"time"
@@ -14,17 +14,17 @@ func TestRemoteHandler(t *testing.T) {
 	testMessage := "Hello from Client!"
 
 	// Create channels for envelopes
-	receiverEnvelopeChan := make(chan *actor.Envelope, 100)
-	senderEnvelopeChan := make(chan *actor.Envelope, 100) // Start server for receiver
+	receiverEnvelopeChan := make(chan envelope.Envelope, 100)
+	senderEnvelopeChan := make(chan envelope.Envelope, 100) // Start server for receiver
 	receiverAddr := "127.0.0.1:8091"
 
 	receiverConfig := remote.Configure(receiverAddr)
-	receiverHandler := remote.NewRemoteHandler(receiverConfig, receiverEnvelopeChan)
+	receiverHandler := remote.NewRemoteHandler(receiverConfig, &receiverEnvelopeChan)
 
 	// Start server for sender
 	senderAddr := "127.0.0.1:8092"
 	senderConfig := remote.Configure(senderAddr)
-	senderHandler := remote.NewRemoteHandler(senderConfig, senderEnvelopeChan)
+	senderHandler := remote.NewRemoteHandler(senderConfig, &senderEnvelopeChan)
 
 	// Give servers time to start
 	time.Sleep(100 * time.Millisecond)

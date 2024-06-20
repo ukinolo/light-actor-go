@@ -2,6 +2,8 @@ package actor
 
 import (
 	"context"
+	"light-actor-go/envelope"
+	"light-actor-go/pid"
 )
 
 // Define the actorState constants
@@ -17,15 +19,15 @@ type ActorContext struct {
 	actorSystem *ActorSystem
 	ctx         context.Context
 	props       *ActorProps
-	envelope    Envelope
+	envelope    envelope.Envelope
 	state       actorState
 	behavior    *Behavior
-	children    []PID
-	self        PID
+	children    []pid.PID
+	self        pid.PID
 }
 
 // NewActorContext creates and initializes a new actorContext
-func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps, self PID) *ActorContext {
+func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps, self pid.PID) *ActorContext {
 	context := new(ActorContext)
 	context.ctx = ctx
 	context.props = props
@@ -37,31 +39,31 @@ func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *Actor
 }
 
 // Adds envelope to the current actor context
-func (ctx *ActorContext) AddEnvelope(envelope Envelope) {
+func (ctx *ActorContext) AddEnvelope(envelope envelope.Envelope) {
 	ctx.envelope = envelope
 }
 
 // Spawns child actor
-func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (PID, error) {
+func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (pid.PID, error) {
 	prop := ConfigureActorProps(props...)
 	prop.AddParent(&ctx.self)
 
-	id, err := NewPID()
+	id, err := pid.NewPID()
 	if err != nil {
-		return PID{}, err
+		return pid.PID{}, err
 	}
 	ctx.children = append(ctx.children, id)
 	return id, nil
 }
 
 // Send message
-func (ctx *ActorContext) Send(message interface{}, reciever PID) {
-	sendEnvelope := NewEnvelope(message, reciever)
+func (ctx *ActorContext) Send(message interface{}, reciever pid.PID) {
+	sendEnvelope := envelope.NewEnvelope(message, reciever)
 	ctx.actorSystem.Send(*sendEnvelope)
 }
 
 func (ctx *ActorContext) Message() interface{} {
-	return ctx.envelope.message
+	return ctx.envelope.Message
 }
 
 // Context returns the context attached to the actorContext
@@ -70,7 +72,7 @@ func (ctx *ActorContext) Context() context.Context {
 }
 
 // Message returns the current message being processed
-func (ctx *ActorContext) Envelope() Envelope {
+func (ctx *ActorContext) Envelope() envelope.Envelope {
 	return ctx.envelope
 }
 

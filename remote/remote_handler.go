@@ -3,6 +3,8 @@ package remote
 import (
 	"context"
 	"fmt"
+	"light-actor-go/envelope"
+	"light-actor-go/pid"
 	"log"
 	"net"
 
@@ -19,19 +21,21 @@ type RemoteConfig struct {
 
 type RemoteHandler struct {
 	UnimplementedRemoteHandlerServer
-	MessageChan chan *MessageWrapper
-	server      *grpc.Server
-	config      *RemoteConfig
+	MessageChan  chan *MessageWrapper
+	EnvelopeChan *chan envelope.Envelope // Updated to pointer to channel
+	server       *grpc.Server
+	config       *RemoteConfig
 }
 
 func Configure(addr string) *RemoteConfig {
 	return &RemoteConfig{Addr: addr}
 }
 
-func NewRemoteHandler(config *RemoteConfig) *RemoteHandler {
+func NewRemoteHandler(config *RemoteConfig, envelopeChan *chan envelope.Envelope) *RemoteHandler { // Updated to pointer to channel
 	handler := &RemoteHandler{
-		MessageChan: make(chan *MessageWrapper, 100),
-		config:      config,
+		MessageChan:  make(chan *MessageWrapper, 100),
+		EnvelopeChan: envelopeChan,
+		config:       config,
 	}
 
 	go handler.startServer()
@@ -76,7 +80,8 @@ func (r *RemoteHandler) ReceiveMessage(req *MessageRequest, stream RemoteHandler
 		//Ensures that only messages intended for a specific client (based on the receiver UUID) are sent to that client through the gRPC stream
 		if msgUUID == receiverUUID {
 			fmt.Printf("Sending message to receiver: %s\n", msgUUID)
-			//TODO: send message to actor with PID that equals reciverUUID
+			envelope := envelope.NewEnvelope(msg.Message, pid.PID{ID: receiverUUID})
+			*r.EnvelopeChan <- *envelope // Updated to send the value through the dereferenced pointer to the channel
 			if err := stream.Send(msg); err != nil {
 				return err
 			}
@@ -87,7 +92,7 @@ func (r *RemoteHandler) ReceiveMessage(req *MessageRequest, stream RemoteHandler
 
 // Sends a message to the specified address
 func (r *RemoteHandler) SendMessageToAddress(addr string, msg proto.Message, receiverUUID uuid.UUID) error {
-	conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials())) // Corrected method name to grpc.Dial
 	if err != nil {
 		return err
 	}

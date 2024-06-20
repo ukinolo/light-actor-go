@@ -1,6 +1,8 @@
 package actor
 
 import (
+ 	"light-actor-go/envelope"
+	"light-actor-go/pid"
 	"sync"
 )
 

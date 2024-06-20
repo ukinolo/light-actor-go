@@ -1,10 +1,12 @@
 package actor
 
+import "light-actor-go/pid"
+
 type ActorProps struct {
-	parent *PID
+	parent *pid.PID
 }
 
-func NewActorProps(parent *PID) *ActorProps {
+func NewActorProps(parent *pid.PID) *ActorProps {
 	props := new(ActorProps)
 	props.parent = parent
 	return props
@@ -17,7 +19,7 @@ func ConfigureActorProps(props ...ActorProps) *ActorProps {
 	return defaultConfig()
 }
 
-func (prop *ActorProps) AddParent(parent *PID) {
+func (prop *ActorProps) AddParent(parent *pid.PID) {
 	prop.parent = parent
 }
 

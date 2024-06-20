@@ -2,6 +2,8 @@ package actor
 
 import (
 	"context"
+	"light-actor-go/envelope"
+	"light-actor-go/pid"
 	"light-actor-go/remote"
 )
 
@@ -17,17 +19,26 @@ func NewActorSystem() *ActorSystem {
 
 // Creates new actor system that can be used remotely
 func NewRemoteActorSystem(remoteConfig remote.RemoteConfig) *ActorSystem {
-	return &ActorSystem{remoteHandler: remote.NewRemoteHandler(&remoteConfig), registry: NewRegistry()}
+	remoteServerChan := make(chan envelope.Envelope)
+	system := &ActorSystem{remoteHandler: remote.NewRemoteHandler(&remoteConfig, &remoteServerChan), registry: NewRegistry()}
+	system.listenRemoteServer(remoteServerChan)
+	return system
 }
 
-func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error) {
+func (system *ActorSystem) listenRemoteServer(remoteServerChan chan envelope.Envelope) {
+	for {
+		env := <-remoteServerChan
+		system.Send(env)
+	}
+}
+func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (pid.PID, error) {
 	prop := ConfigureActorProps(props...)
 
-	actorChan := make(chan Envelope)
+	actorChan := make(chan envelope.Envelope)
 	mailbox := NewMailbox(actorChan)
 
 	mailboxChan := mailbox.GetChan()
-	mailboxPID, err := NewPID()
+	mailboxPID, err := pid.NewPID()
 	if err != nil {
 		return mailboxPID, err
 	}
@@ -56,7 +67,7 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error)
 	return mailboxPID, nil
 }
 
-func (system *ActorSystem) Send(envelope Envelope) {
+func (system *ActorSystem) Send(envelope envelope.Envelope) {
 	ch := system.registry.Find(*envelope.Receiver())
 	if ch == nil {
 		return

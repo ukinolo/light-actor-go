@@ -21,7 +21,6 @@ type ActorContext struct {
 	props       *ActorProps
 	envelope    envelope.Envelope
 	state       actorState
-	behavior    *Behavior
 	children    []pid.PID
 	self        pid.PID
 }
@@ -34,7 +33,6 @@ func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *Actor
 	context.state = actorStart
 	context.actorSystem = actorSystem
 	context.self = self
-	context.behavior = NewBehavior() // Initialize behavior
 	return context
 }
 
@@ -81,17 +79,6 @@ func (ctx *ActorContext) State() actorState {
 	return ctx.state
 }
 
-// Become sets the actor's behavior to a new one
-func (ctx *ActorContext) Become(receive ReceiveFunc) {
-	ctx.behavior.Become(receive)
-}
-
-// BecomeStacked adds a new behavior on top of the current behavior stack
-func (ctx *ActorContext) BecomeStacked(receive ReceiveFunc) {
-	ctx.behavior.BecomeStacked(receive)
-}
-
-// UnbecomeStacked removes the top behavior from the behavior stack
-func (ctx *ActorContext) UnbecomeStacked() {
-	ctx.behavior.UnbecomeStacked()
+func (ctx *ActorContext) Self() pid.PID {
+	return ctx.self
 }

@@ -34,6 +34,10 @@ func (b *Behavior) Receive(context ActorContext) {
 	}
 }
 
+func (b *Behavior) IsEmpty() bool {
+	return len(b.stack) == 0
+}
+
 func (b *Behavior) clear() {
 	b.stack = b.stack[:0]
 }

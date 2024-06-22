@@ -1,4 +1,4 @@
-package actor
+package envelope
 
 import (
 	"light-actor-go/pid"
@@ -7,13 +7,13 @@ import (
 )
 
 type Envelope struct {
-	message  interface{}
+	Message  interface{}
 	receiver pid.PID
 }
 
 func NewEnvelope(message interface{}, receiver pid.PID) *Envelope {
 	return &Envelope{
-		message:  message,
+		Message:  message,
 		receiver: receiver,
 	}
 }
@@ -26,5 +26,14 @@ func (e *Envelope) Receiver() *pid.PID {
 }
 
 func (e *Envelope) Unwrap() (interface{}, *pid.PID) {
-	return e.message, &e.receiver
+
+	var receiver *pid.PID
+
+	if e.receiver.ID == uuid.Nil {
+		receiver = &e.receiver
+	} else {
+		receiver = nil
+	}
+
+	return e.Message, receiver
 }

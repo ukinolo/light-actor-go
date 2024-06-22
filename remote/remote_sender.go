@@ -1,8 +1,7 @@
 package remote
 
 import (
-	"light-actor-go/envelope"
-	"light-actor-go/pid"
+	"light-actor-go/actor"
 	"log"
 
 	"google.golang.org/protobuf/proto"
@@ -11,20 +10,20 @@ import (
 type RemoteSender struct {
 	remoteHandler *RemoteHandler
 	remoteAddress string
-	pid           pid.PID
-	chanSender    chan envelope.Envelope
+	pid           actor.PID
+	chanSender    chan actor.Envelope
 }
 
-func NewRemoteSender(handler *RemoteHandler, address string, pid pid.PID) *RemoteSender {
+func NewRemoteSender(handler *RemoteHandler, address string, pid actor.PID) *RemoteSender {
 	return &RemoteSender{
 		remoteHandler: handler,
 		remoteAddress: address,
 		pid:           pid,
-		chanSender:    make(chan envelope.Envelope),
+		chanSender:    make(chan actor.Envelope),
 	}
 }
 
-func (rs *RemoteSender) GetChan() chan envelope.Envelope {
+func (rs *RemoteSender) GetChan() chan actor.Envelope {
 	return rs.chanSender
 }
 

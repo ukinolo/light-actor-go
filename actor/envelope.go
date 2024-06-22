@@ -1,33 +1,31 @@
-package envelope
+package actor
 
 import (
-	"light-actor-go/pid"
-
 	"github.com/google/uuid"
 )
 
 type Envelope struct {
 	Message  interface{}
-	receiver pid.PID
+	receiver PID
 }
 
-func NewEnvelope(message interface{}, receiver pid.PID) Envelope {
+func NewEnvelope(message interface{}, receiver PID) Envelope {
 	return Envelope{
 		Message:  message,
 		receiver: receiver,
 	}
 }
 
-func (e *Envelope) Receiver() *pid.PID {
+func (e *Envelope) Receiver() *PID {
 	if e.receiver.ID == uuid.Nil {
 		return nil
 	}
 	return &e.receiver
 }
 
-func (e *Envelope) Unwrap() (interface{}, *pid.PID) {
+func (e *Envelope) Unwrap() (interface{}, *PID) {
 
-	var receiver *pid.PID
+	var receiver *PID
 
 	if e.receiver.ID == uuid.Nil {
 		receiver = &e.receiver

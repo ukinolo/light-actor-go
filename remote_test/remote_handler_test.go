@@ -11,7 +11,6 @@ import (
 
 func TestRemoteHandler(t *testing.T) {
 	// Define test message
-	testMessage := "Hello from Client!"
 
 	// Create channels for envelopes
 	receiverEnvelopeChan := make(chan *actor.Envelope, 100)
@@ -32,6 +31,8 @@ func TestRemoteHandler(t *testing.T) {
 	// Define client and receiver UUIDs
 	receiverUUID := uuid.New()
 	//senderUUID := uuid.New()
+
+	testMessage := "Hello from Client!"
 	stringMessage := &StringMessage{Value: testMessage}
 
 	// Send the message from sender to receiver

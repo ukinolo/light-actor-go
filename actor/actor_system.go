@@ -57,6 +57,10 @@ func (system *ActorSystem) Send(envelope Envelope) {
 	ch <- envelope
 }
 
+func (system *ActorSystem) AddRemoteActor(remoteActorPID PID, senderChan chan Envelope) {
+	system.registry.Add(remoteActorPID, senderChan)
+}
+
 // func (system *ActorSystem) SpawnRemoteActor(a Actor, remoteAddress string, props ...ActorProps) (PID, error) {
 // 	prop := ConfigureActorProps(props...)
 

@@ -10,7 +10,7 @@ type Registry struct {
 }
 
 func NewRegistry() *Registry {
-	return &Registry{mapping: make(map[PID]chan Envelope)}
+	return &Registry{mapping: make(map[PID]chan Envelope), mu: sync.RWMutex{}}
 }
 
 func (r *Registry) Add(pid PID, ch chan Envelope) error {

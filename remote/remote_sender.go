@@ -1,44 +1,51 @@
 package remote
 
 import (
+	"context"
+	"errors"
 	"light-actor-go/actor"
-	"log"
 
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
+	anypb "google.golang.org/protobuf/types/known/anypb"
 )
 
 type RemoteSender struct {
-	remoteHandler *RemoteHandler
 	remoteAddress string
-	pid           actor.PID
-	chanSender    chan actor.Envelope
 }
 
-func NewRemoteSender(handler *RemoteHandler, address string, pid actor.PID) *RemoteSender {
+func NewRemoteSender(address string) *RemoteSender {
 	return &RemoteSender{
-		remoteHandler: handler,
 		remoteAddress: address,
-		pid:           pid,
-		chanSender:    make(chan actor.Envelope),
 	}
 }
 
-func (rs *RemoteSender) GetChan() chan actor.Envelope {
-	return rs.chanSender
-}
-
-func (rs *RemoteSender) Start() {
-	for {
-		env := <-rs.chanSender
-		msg, ok := env.Message.(proto.Message)
-		if !ok {
-			log.Printf("Failed to send message: not a valid protobuf message")
-			continue
-		}
-		receiverUUID := env.Receiver().ID
-		err := rs.remoteHandler.SendMessageToAddress(rs.remoteAddress, msg, receiverUUID)
-		if err != nil {
-			log.Printf("Failed to send message to %s: %v", rs.remoteAddress, err)
-		}
+func (rs *RemoteSender) SendMessage(envelope actor.Envelope) error {
+	conn, err := grpc.NewClient(rs.remoteAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	if err != nil {
+		return err
 	}
+	defer conn.Close()
+
+	client := NewRemoteReceiverClient(conn)
+
+	anyMsg, err := anypb.New(envelope.Message.(proto.Message))
+	if err != nil {
+		return err
+	}
+
+	protoEnvelope := &Envelope{
+		Message:  anyMsg,
+		Receiver: "Neko",
+	}
+
+	ret, err := client.ReceiveMessage(context.Background(), protoEnvelope)
+	if ret.Error != "" {
+		return errors.New(ret.Error)
+	}
+	if err != nil {
+		return err
+	}
+	return nil
 }

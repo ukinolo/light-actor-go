@@ -2,6 +2,7 @@ package actor
 
 import (
 	"context"
+	"fmt"
 )
 
 type ActorSystem struct {
@@ -26,19 +27,21 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error)
 	}
 
 	//Start mailbox in separate gorutine
-	StartWorker(mailbox.Start, nil)
+	startMailbox(mailbox)
+	// StartWorker(mailbox.Start, nil)
 
 	//Start actor in separate gorutine
-	StartWorker(func() {
-		//Setup basic actor context
-		actorContext := NewActorContext(context.Background(), system, prop, mailboxPID)
-		for {
-			envelope := <-actorChan
-			//Set only message and send
-			actorContext.AddEnvelope(envelope)
-			a.Receive(*actorContext)
-		}
-	}, nil)
+	startActor(a, system, prop, mailboxPID, actorChan)
+	// StartWorker(func() {
+	// 	//Setup basic actor context
+	// 	actorContext := NewActorContext(context.Background(), system, prop, mailboxPID)
+	// 	for {
+	// 		envelope := <-actorChan
+	// 		//Set only message and send
+	// 		actorContext.AddEnvelope(envelope)
+	// 		a.Receive(*actorContext)
+	// 	}
+	// }, nil)
 
 	//Put mailbox chanel in registry
 	err = system.registry.Add(mailboxPID, mailboxChan)
@@ -47,6 +50,36 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error)
 	}
 
 	return mailboxPID, nil
+}
+
+func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, actorChan chan Envelope) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Actor recovered, need restarting:", r)
+			}
+		}()
+
+		//Setup basic actor context
+		actorContext := NewActorContext(context.Background(), system, prop, mailboxPID)
+		for {
+			envelope := <-actorChan
+			//Set only message and send
+			actorContext.AddEnvelope(envelope)
+			a.Receive(*actorContext)
+		}
+	}()
+}
+
+func startMailbox(mailbox *Mailbox) {
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Println("Mailbox recovered, need restarting:", r)
+			}
+		}()
+		mailbox.Start()
+	}()
 }
 
 func (system *ActorSystem) Send(envelope Envelope) {

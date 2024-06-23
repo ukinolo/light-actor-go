@@ -1,4 +1,4 @@
-package pid
+package actor
 
 import "github.com/google/uuid"
 

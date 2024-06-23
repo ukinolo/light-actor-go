@@ -1,29 +1,27 @@
 package actor
 
 import (
-	"light-actor-go/envelope"
-	"light-actor-go/pid"
 	"sync"
 )
 
 type Registry struct {
-	mapping map[pid.PID]chan envelope.Envelope // Stores mailbox channels
-	mu      sync.RWMutex                       // Mutex to make the registry thread-safe
+	mapping map[PID]chan Envelope // Stores mailbox channels
+	mu      sync.RWMutex
 }
 
 func NewRegistry() *Registry {
-	return &Registry{mapping: make(map[pid.PID]chan envelope.Envelope)}
+	return &Registry{mapping: make(map[PID]chan Envelope)}
 }
 
-func (r *Registry) Add(pid pid.PID, ch chan envelope.Envelope) error {
-	r.mu.Lock()         // Lock the mutex for writing
-	defer r.mu.Unlock() // Ensure the mutex is unlocked after the operation
+func (r *Registry) Add(pid PID, ch chan Envelope) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
 	r.mapping[pid] = ch
 	return nil
 }
 
-func (r *Registry) Find(pid pid.PID) chan envelope.Envelope {
-	r.mu.RLock()         // Lock the mutex for reading
-	defer r.mu.RUnlock() // Ensure the mutex is unlocked after the operation
+func (r *Registry) Find(pid PID) chan Envelope {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
 	return r.mapping[pid]
 }

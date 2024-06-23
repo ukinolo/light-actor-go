@@ -2,8 +2,6 @@ package actor
 
 import (
 	"context"
-	"light-actor-go/envelope"
-	"light-actor-go/pid"
 )
 
 // Define the actorState constants
@@ -19,14 +17,14 @@ type ActorContext struct {
 	actorSystem *ActorSystem
 	ctx         context.Context
 	props       *ActorProps
-	envelope    envelope.Envelope
+	envelope    Envelope
 	state       actorState
-	children    []pid.PID
-	self        pid.PID
+	children    []PID
+	self        PID
 }
 
 // NewActorContext creates and initializes a new actorContext
-func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps, self pid.PID) *ActorContext {
+func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps, self PID) *ActorContext {
 	context := new(ActorContext)
 	context.ctx = ctx
 	context.props = props
@@ -37,26 +35,26 @@ func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *Actor
 }
 
 // Adds envelope to the current actor context
-func (ctx *ActorContext) AddEnvelope(envelope envelope.Envelope) {
+func (ctx *ActorContext) AddEnvelope(envelope Envelope) {
 	ctx.envelope = envelope
 }
 
 // Spawns child actor
-func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (pid.PID, error) {
+func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (PID, error) {
 	prop := ConfigureActorProps(props...)
 	prop.AddParent(&ctx.self)
 
-	id, err := pid.NewPID()
+	id, err := NewPID()
 	if err != nil {
-		return pid.PID{}, err
+		return PID{}, err
 	}
 	ctx.children = append(ctx.children, id)
 	return id, nil
 }
 
 // Send message
-func (ctx *ActorContext) Send(message interface{}, reciever pid.PID) {
-	sendEnvelope := envelope.NewEnvelope(message, reciever)
+func (ctx *ActorContext) Send(message interface{}, reciever PID) {
+	sendEnvelope := NewEnvelope(message, reciever)
 	ctx.actorSystem.Send(sendEnvelope)
 }
 
@@ -70,7 +68,7 @@ func (ctx *ActorContext) Context() context.Context {
 }
 
 // Message returns the current message being processed
-func (ctx *ActorContext) Envelope() envelope.Envelope {
+func (ctx *ActorContext) Envelope() Envelope {
 	return ctx.envelope
 }
 
@@ -79,6 +77,6 @@ func (ctx *ActorContext) State() actorState {
 	return ctx.state
 }
 
-func (ctx *ActorContext) Self() pid.PID {
+func (ctx *ActorContext) Self() PID {
 	return ctx.self
 }

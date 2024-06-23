@@ -26,7 +26,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type RemoteReceiverClient interface {
-	ReceiveMessage(ctx context.Context, in *Envelope, opts ...grpc.CallOption) (*Error, error)
+	ReceiveMessage(ctx context.Context, in *Envelope, opts ...grpc.CallOption) (*Empty, error)
 }
 
 type remoteReceiverClient struct {
@@ -37,9 +37,9 @@ func NewRemoteReceiverClient(cc grpc.ClientConnInterface) RemoteReceiverClient {
 	return &remoteReceiverClient{cc}
 }
 
-func (c *remoteReceiverClient) ReceiveMessage(ctx context.Context, in *Envelope, opts ...grpc.CallOption) (*Error, error) {
+func (c *remoteReceiverClient) ReceiveMessage(ctx context.Context, in *Envelope, opts ...grpc.CallOption) (*Empty, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(Error)
+	out := new(Empty)
 	err := c.cc.Invoke(ctx, RemoteReceiver_ReceiveMessage_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (c *remoteReceiverClient) ReceiveMessage(ctx context.Context, in *Envelope,
 // All implementations must embed UnimplementedRemoteReceiverServer
 // for forward compatibility
 type RemoteReceiverServer interface {
-	ReceiveMessage(context.Context, *Envelope) (*Error, error)
+	ReceiveMessage(context.Context, *Envelope) (*Empty, error)
 	mustEmbedUnimplementedRemoteReceiverServer()
 }
 
@@ -59,7 +59,7 @@ type RemoteReceiverServer interface {
 type UnimplementedRemoteReceiverServer struct {
 }
 
-func (UnimplementedRemoteReceiverServer) ReceiveMessage(context.Context, *Envelope) (*Error, error) {
+func (UnimplementedRemoteReceiverServer) ReceiveMessage(context.Context, *Envelope) (*Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ReceiveMessage not implemented")
 }
 func (UnimplementedRemoteReceiverServer) mustEmbedUnimplementedRemoteReceiverServer() {}
@@ -106,5 +106,5 @@ var RemoteReceiver_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "reciver.proto",
+	Metadata: "receiver.proto",
 }

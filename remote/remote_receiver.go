@@ -2,7 +2,7 @@ package remote
 
 import (
 	context "context"
-	"fmt"
+	"errors"
 	"light-actor-go/actor"
 	"log"
 	"net"
@@ -16,9 +16,10 @@ type RemoteConfig struct {
 
 type RemoteReceiver struct {
 	UnimplementedRemoteReceiverServer
-	actorSystem *actor.ActorSystem
-	server      *grpc.Server
-	config      *RemoteConfig
+	actorSystem        *actor.ActorSystem
+	server             *grpc.Server
+	config             *RemoteConfig
+	localActorRegistry Registry //Registy of local actors that are discoverable remotely
 }
 
 func NewRemoteConfig(addr string) *RemoteConfig {
@@ -27,8 +28,9 @@ func NewRemoteConfig(addr string) *RemoteConfig {
 
 func NewRemoteReceiver(config *RemoteConfig, actorSystem *actor.ActorSystem) *RemoteReceiver {
 	receiver := &RemoteReceiver{
-		config:      config,
-		actorSystem: actorSystem,
+		config:             config,
+		actorSystem:        actorSystem,
+		localActorRegistry: *NewRegistry(),
 	}
 
 	return receiver
@@ -48,10 +50,16 @@ func (r *RemoteReceiver) startServer() {
 	}
 }
 
-func (r *RemoteReceiver) ReceiveMessage(context.Context, *Envelope) (*Error, error) {
-	//TODO find actor
-	//TODO send message to actor
-	//TODO return
-	fmt.Println("Pogodio sam metodu") //TODO remove
-	return &Error{Error: ""}, nil
+func (r *RemoteReceiver) AddRemoteActor(name string, actorPID actor.PID) error {
+	return r.localActorRegistry.Add(name, actorPID)
+}
+
+func (r *RemoteReceiver) ReceiveMessage(context context.Context, envelope *Envelope) (*Empty, error) {
+	actorPID := r.localActorRegistry.Find(envelope.Receiver)
+	if (actorPID == actor.PID{}) {
+		return &Empty{}, errors.New("no actor with name " + envelope.Receiver + " exists")
+	}
+	actorEnvelope := actor.NewEnvelope(envelope.Message, actorPID)
+	r.actorSystem.Send(actorEnvelope)
+	return &Empty{}, nil
 }

@@ -2,8 +2,6 @@ package remote
 
 import (
 	"context"
-	"errors"
-	"light-actor-go/actor"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -21,7 +19,7 @@ func NewRemoteSender(address string) *RemoteSender {
 	}
 }
 
-func (rs *RemoteSender) SendMessage(envelope actor.Envelope) error {
+func (rs *RemoteSender) SendMessage(message interface{}, receiverName string) error {
 	conn, err := grpc.NewClient(rs.remoteAddress, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
@@ -30,20 +28,17 @@ func (rs *RemoteSender) SendMessage(envelope actor.Envelope) error {
 
 	client := NewRemoteReceiverClient(conn)
 
-	anyMsg, err := anypb.New(envelope.Message.(proto.Message))
+	anyMsg, err := anypb.New(message.(proto.Message))
 	if err != nil {
 		return err
 	}
 
 	protoEnvelope := &Envelope{
 		Message:  anyMsg,
-		Receiver: "Neko",
+		Receiver: receiverName,
 	}
 
-	ret, err := client.ReceiveMessage(context.Background(), protoEnvelope)
-	if ret.Error != "" {
-		return errors.New(ret.Error)
-	}
+	_, err = client.ReceiveMessage(context.Background(), protoEnvelope)
 	if err != nil {
 		return err
 	}

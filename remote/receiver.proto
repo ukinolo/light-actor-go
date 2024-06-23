@@ -7,16 +7,12 @@ import "google/protobuf/any.proto";
 option go_package = ".";
 
 service RemoteReceiver {
-  rpc ReceiveMessage (Envelope) returns (Error);
+  rpc ReceiveMessage (Envelope) returns (Empty);
 }
 
 message Envelope {
   google.protobuf.Any message = 1;
   string receiver = 2;
-}
-
-message Error {
-    string error = 1;
 }
 
 message Empty {}

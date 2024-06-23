@@ -14,10 +14,10 @@ func NewRegistry() *Registry {
 	return &Registry{mapping: make(map[string]actor.PID)}
 }
 
-func (r *Registry) Add(name string, pid actor.PID) error {
+func (r *Registry) Add(name string, actorPID actor.PID) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.mapping[name] = pid
+	r.mapping[name] = actorPID
 	return nil
 }
 

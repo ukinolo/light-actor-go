@@ -11,14 +11,16 @@ type Remote struct {
 }
 
 func NewRemote(remoteConfing RemoteConfig, actorSystem *actor.ActorSystem) *Remote {
-	return &Remote{remoteReciever: *NewRemoteReceiver(&remoteConfing, actorSystem), actorSystem: actorSystem}
+	return &Remote{remoteReciever: *NewRemoteReceiver(&remoteConfing, actorSystem),
+		actorSystem: actorSystem,
+	}
 }
 
 func (r *Remote) Listen() {
 	go r.remoteReciever.startServer()
 }
 
-func (r *Remote) SpawnRemoteActor(address string) (actor.PID, error) {
+func (r *Remote) SpawnRemoteActor(address string, name string) (actor.PID, error) {
 	newPID, err := actor.NewPID()
 	if err != nil {
 		return newPID, nil
@@ -29,7 +31,8 @@ func (r *Remote) SpawnRemoteActor(address string) (actor.PID, error) {
 
 	go func() {
 		for {
-			err := remoteSender.SendMessage(<-envelopeChan)
+			envelope := <-envelopeChan
+			err := remoteSender.SendMessage(envelope.Message, name)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -40,8 +43,10 @@ func (r *Remote) SpawnRemoteActor(address string) (actor.PID, error) {
 	return newPID, nil
 }
 
-// TODO name
-func (r *Remote) FunctionToCreateDiscoverableActor() error {
-	return nil
-	//TODO
+func (r *Remote) MakeActorDiscoverable(actorPID actor.PID, name string) error {
+	return r.remoteReciever.AddRemoteActor(name, actorPID)
 }
+
+// func (r *Remote) findActorName(actorPID actor.PID) string {
+// 	return r.remoteActorRegistry.Find(actorPID)
+// }

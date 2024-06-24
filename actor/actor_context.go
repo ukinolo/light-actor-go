@@ -2,6 +2,7 @@ package actor
 
 import (
 	"context"
+	"fmt"
 )
 
 // Define the actorState constants
@@ -79,4 +80,17 @@ func (ctx *ActorContext) State() actorState {
 
 func (ctx *ActorContext) Self() PID {
 	return ctx.self
+}
+
+func (ctx *ActorContext) HandleSystemMessage(msg SystemMessage) {
+	switch msg.Type {
+	case SystemMessageStart:
+		//start logic
+		fmt.Println("System message start")
+	case SystemMessageStop:
+		// stop logic
+		fmt.Println("System message stop")
+	default:
+		fmt.Println("System message unknown")
+	}
 }

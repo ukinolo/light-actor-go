@@ -28,20 +28,9 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error)
 
 	//Start mailbox in separate gorutine
 	startMailbox(mailbox)
-	// StartWorker(mailbox.Start, nil)
 
 	//Start actor in separate gorutine
 	startActor(a, system, prop, mailboxPID, actorChan)
-	// StartWorker(func() {
-	// 	//Setup basic actor context
-	// 	actorContext := NewActorContext(context.Background(), system, prop, mailboxPID)
-	// 	for {
-	// 		envelope := <-actorChan
-	// 		//Set only message and send
-	// 		actorContext.AddEnvelope(envelope)
-	// 		a.Receive(*actorContext)
-	// 	}
-	// }, nil)
 
 	//Put mailbox chanel in registry
 	err = system.registry.Add(mailboxPID, mailboxChan)

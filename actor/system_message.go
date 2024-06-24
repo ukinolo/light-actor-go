@@ -5,8 +5,11 @@ type SystemMessageType int
 const (
 	SystemMessageStart SystemMessageType = iota
 	SystemMessageStop
+	SystemMessageGracefulStop
+	SystemMessageChildTerminated
 )
 
 type SystemMessage struct {
-	Type SystemMessageType
+	Type   SystemMessageType
+	Extras interface{}
 }

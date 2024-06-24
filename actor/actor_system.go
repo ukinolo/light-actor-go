@@ -65,7 +65,6 @@ func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, 
 		actorContext := NewActorContext(context.Background(), system, prop, mailboxPID)
 
 		system.SendSystemMessage(actorContext.self, SystemMessage{Type: SystemMessageStart})
-		defer system.SendSystemMessage(actorContext.self, SystemMessage{Type: SystemMessageStop})
 
 		for {
 			envelope := <-actorChan
@@ -74,6 +73,9 @@ func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, 
 			switch envelope.Message.(type) {
 			case SystemMessage:
 				actorContext.HandleSystemMessage(envelope.Message.(SystemMessage))
+				if actorContext.state == actorStop {
+					return
+				}
 			default:
 				a.Receive(*actorContext)
 			}
@@ -106,5 +108,17 @@ func (system *ActorSystem) AddRemoteActor(remoteActorPID PID, senderChan chan En
 
 func (system *ActorSystem) SendSystemMessage(receiver PID, msg SystemMessage) {
 	envelope := NewEnvelope(msg, receiver)
+	// fmt.Println("Send system message:", msg)
+	// fmt.Println("Send system message to:", receiver)
+	system.Send(envelope)
+}
+
+func (system *ActorSystem) ForcefulStop(pid PID) {
+	envelope := NewEnvelope(SystemMessage{Type: SystemMessageStop}, pid)
+	system.Send(envelope)
+}
+
+func (system *ActorSystem) GracefulStop(pid PID) {
+	envelope := NewEnvelope(SystemMessage{Type: SystemMessageGracefulStop}, pid)
 	system.Send(envelope)
 }

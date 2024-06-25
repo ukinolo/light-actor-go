@@ -70,15 +70,23 @@ func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, 
 			envelope := <-actorChan
 			//Set only message and send
 			actorContext.AddEnvelope(envelope)
-			switch envelope.Message.(type) {
-			case SystemMessage:
-				actorContext.HandleSystemMessage(envelope.Message.(SystemMessage))
+			a.Receive(*actorContext)
+
+			if msg, ok := envelope.Message.(SystemMessage); ok {
+				actorContext.HandleSystemMessage(msg)
 				if actorContext.state == actorStop {
 					return
 				}
-			default:
-				a.Receive(*actorContext)
 			}
+			// switch envelope.Message.(type) {
+			// case SystemMessage:
+			// 	actorContext.HandleSystemMessage(envelope.Message.(SystemMessage))
+			// 	if actorContext.state == actorStop {
+			// 		return
+			// 	}
+			// default:
+			// 	a.Receive(*actorContext)
+			// }
 		}
 	}()
 }
@@ -111,6 +119,11 @@ func (system *ActorSystem) SendSystemMessage(receiver PID, msg SystemMessage) {
 	// fmt.Println("Send system message:", msg)
 	// fmt.Println("Send system message to:", receiver)
 	system.Send(envelope)
+}
+
+func (system *ActorSystem) RemoveActor(receiver PID, msg SystemMessage) {
+	system.SendSystemMessage(receiver, msg)
+	system.registry.Remove(receiver)
 }
 
 func (system *ActorSystem) ForcefulStop(pid PID) {

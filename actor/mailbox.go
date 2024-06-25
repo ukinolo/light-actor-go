@@ -1,9 +1,17 @@
 package actor
 
+type mailboxState int32
+
+const (
+	mailboxRunning mailboxState = iota
+	mailboxStopping
+)
+
 type Mailbox struct {
 	actorChan   chan Envelope
 	mailboxChan chan Envelope
 	queue       []Envelope
+	state       mailboxState
 }
 
 func NewMailbox(actorChan chan Envelope) *Mailbox {
@@ -11,6 +19,7 @@ func NewMailbox(actorChan chan Envelope) *Mailbox {
 		actorChan:   actorChan,
 		mailboxChan: make(chan Envelope),
 		queue:       make([]Envelope, 0),
+		state:       mailboxStopping,
 	}
 	return m
 }
@@ -27,29 +36,46 @@ func (m *Mailbox) getEnvelope() Envelope {
 }
 
 func (m *Mailbox) Start() {
+	m.state = mailboxRunning
 	var newEnvelope Envelope
 	var haveReady bool = false
-	fn := func() Envelope {
-		if !haveReady {
-			haveReady = true
-			if len(m.queue) > 0 {
-				newEnvelope = m.getEnvelope()
-			} else {
-				newEnvelope = <-m.mailboxChan
+	for {
+		for haveReady {
+			select {
+			case m.actorChan <- newEnvelope:
+				if len(m.queue) > 0 {
+					newEnvelope = m.getEnvelope()
+				} else {
+					haveReady = false
+				}
+			case envelope := <-m.mailboxChan:
+				switch msg := envelope.Message.(type) {
+				case SystemMessage:
+					if msg.Type == DeleteMailbox {
+						m.delete()
+						return
+					}
+				}
+				m.buffer(envelope)
 			}
 		}
-		return newEnvelope
-	}
-	for {
-		select {
-		case m.actorChan <- fn():
-			haveReady = false
-		case envelope := <-m.mailboxChan:
-			m.buffer(envelope)
+		newEnvelope = <-m.mailboxChan
+		switch msg := newEnvelope.Message.(type) {
+		case SystemMessage:
+			if msg.Type == DeleteMailbox {
+				m.delete()
+				return
+			}
 		}
+		haveReady = true
 	}
 }
 
 func (m *Mailbox) GetChan() chan Envelope {
 	return m.mailboxChan
+}
+
+func (m *Mailbox) delete() {
+	close(m.actorChan)
+	clear(m.queue)
 }

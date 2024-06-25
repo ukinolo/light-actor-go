@@ -137,6 +137,7 @@ func (ctx *ActorContext) Stop() {
 		ctx.mu.RUnlock()
 	}
 
+	ctx.actorSystem.SendSystemMessage(ctx.self, SystemMessage{Type: DeleteMailbox})
 	ctx.state = actorStop
 	// fmt.Println("System message stop", ctx.self)
 }
@@ -158,6 +159,7 @@ func (ctx *ActorContext) GracefulStop() {
 			ctx.actorSystem.SendSystemMessage(*ctx.props.parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
 		}
 		// fmt.Println("No children, actor stopped", ctx.self)
+		ctx.actorSystem.SendSystemMessage(ctx.self, SystemMessage{Type: DeleteMailbox})
 		ctx.state = actorStop
 	}
 }
@@ -175,6 +177,7 @@ func (ctx *ActorContext) ChildTerminated(child PID) {
 		if ctx.props.parent != nil {
 			ctx.actorSystem.SendSystemMessage(*ctx.props.parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
 		}
+		ctx.actorSystem.SendSystemMessage(ctx.self, SystemMessage{Type: DeleteMailbox})
 		ctx.state = actorStop
 		// fmt.Println("No more children left, actor stopping", ctx.self)
 	} else {

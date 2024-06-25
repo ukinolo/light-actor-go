@@ -7,6 +7,7 @@ const (
 	SystemMessageStop
 	SystemMessageGracefulStop
 	SystemMessageChildTerminated
+	DeleteMailbox
 )
 
 type SystemMessage struct {

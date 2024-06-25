@@ -25,3 +25,9 @@ func (r *Registry) Find(pid PID) chan Envelope {
 	defer r.mu.RUnlock()
 	return r.mapping[pid]
 }
+
+func (r *Registry) Delete(pid PID) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	delete(r.mapping, pid)
+}

@@ -1,11 +1,19 @@
 package actor
 
+import (
+	"fmt"
+	"sync"
+
+	"github.com/google/uuid"
+)
+
 // Define the actorState constants
 type actorState int32
 
 const (
 	actorStart actorState = iota
 	actorStop
+	actorStopping
 )
 
 // ActorContext holds the state and context of an actor
@@ -14,8 +22,9 @@ type ActorContext struct {
 	props       *ActorProps
 	envelope    Envelope
 	state       actorState
-	children    []PID
+	children    map[uuid.UUID]PID
 	self        PID
+	mu          sync.RWMutex
 }
 
 // NewActorContext creates and initializes a new actorContext
@@ -25,6 +34,7 @@ func NewActorContext(actorSystem *ActorSystem, props *ActorProps, self PID) *Act
 	context.state = actorStart
 	context.actorSystem = actorSystem
 	context.self = self
+	context.children = make(map[uuid.UUID]PID) // Initialize children as a map
 	return context
 }
 
@@ -38,17 +48,26 @@ func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (PID, erro
 	prop := ConfigureActorProps(props...)
 	prop.AddParent(&ctx.self)
 
-	id, err := NewPID()
+	// pid, err := NewPID()
+	// if err != nil {
+	// 	return PID{}, err
+	// }
+
+	pid, err := ctx.actorSystem.SpawnActor(actor, *prop)
 	if err != nil {
 		return PID{}, err
 	}
-	ctx.children = append(ctx.children, id)
-	return id, nil
+
+	ctx.mu.Lock()
+	ctx.children[pid.ID] = pid
+	ctx.mu.Unlock()
+
+	return pid, nil
 }
 
 // Send message
-func (ctx *ActorContext) Send(message interface{}, reciever PID) {
-	sendEnvelope := NewEnvelope(message, reciever)
+func (ctx *ActorContext) Send(message interface{}, receiver PID) {
+	sendEnvelope := NewEnvelope(message, receiver)
 	ctx.actorSystem.Send(sendEnvelope)
 }
 
@@ -68,4 +87,89 @@ func (ctx *ActorContext) State() actorState {
 
 func (ctx *ActorContext) Self() PID {
 	return ctx.self
+}
+
+func (ctx *ActorContext) ActorSystem() *ActorSystem {
+	return ctx.actorSystem
+}
+
+func (ctx *ActorContext) HandleSystemMessage(msg SystemMessage) {
+	switch msg.Type {
+	case SystemMessageStart:
+		ctx.Start()
+	case SystemMessageStop:
+		ctx.Stop()
+	case SystemMessageGracefulStop:
+		ctx.GracefulStop()
+	case SystemMessageChildTerminated:
+		if child, ok := msg.Extras.(PID); ok {
+			ctx.ChildTerminated(child)
+		} else {
+			fmt.Println("System message extras not a PID")
+		}
+	default:
+		fmt.Println("System message unknown")
+	}
+}
+
+func (ctx *ActorContext) Start() {
+	ctx.state = actorStart
+	// fmt.Println("System message start:", ctx.self)
+}
+
+func (ctx *ActorContext) Stop() {
+
+	ctx.mu.RLock()
+	if len(ctx.children) > 0 {
+		for _, child := range ctx.children {
+			ctx.actorSystem.SendSystemMessage(child, SystemMessage{Type: SystemMessageStop})
+		}
+		ctx.mu.RUnlock()
+	} else {
+		ctx.mu.RUnlock()
+	}
+
+	ctx.state = actorStop
+	// fmt.Println("System message stop", ctx.self)
+}
+func (ctx *ActorContext) GracefulStop() {
+	ctx.state = actorStopping
+	// fmt.Println("System message stopping", ctx.self)
+
+	ctx.mu.RLock()
+
+	if len(ctx.children) > 0 {
+		for _, child := range ctx.children {
+			ctx.actorSystem.SendSystemMessage(child, SystemMessage{Type: SystemMessageGracefulStop})
+			// fmt.Println("Sending graceful stop to child:", child)
+		}
+		ctx.mu.RUnlock()
+	} else {
+		ctx.mu.RUnlock()
+		if ctx.props.parent != nil {
+			ctx.actorSystem.SendSystemMessage(*ctx.props.parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
+		}
+		// fmt.Println("No children, actor stopped", ctx.self)
+		ctx.state = actorStop
+	}
+}
+
+func (ctx *ActorContext) ChildTerminated(child PID) {
+	// fmt.Println("System message child terminated:", child)
+
+	ctx.mu.Lock()
+	delete(ctx.children, child.ID)
+	ctx.mu.Unlock()
+
+	ctx.mu.RLock()
+	if len(ctx.children) == 0 && ctx.state == actorStopping {
+		ctx.mu.RUnlock()
+		if ctx.props.parent != nil {
+			ctx.actorSystem.SendSystemMessage(*ctx.props.parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
+		}
+		ctx.state = actorStop
+		// fmt.Println("No more children left, actor stopping", ctx.self)
+	} else {
+		ctx.mu.RUnlock()
+	}
 }

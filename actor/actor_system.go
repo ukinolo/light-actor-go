@@ -1,7 +1,6 @@
 package actor
 
 import (
-	"context"
 	"fmt"
 )
 
@@ -30,7 +29,6 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error)
 	startMailbox(mailbox)
 
 	//Start actor in separate gorutine
-
 	startActor(a, system, prop, mailboxPID, actorChan)
 
 	//Put mailbox chanel in registry
@@ -38,6 +36,8 @@ func (system *ActorSystem) SpawnActor(a Actor, props ...ActorProps) (PID, error)
 	if err != nil {
 		return mailboxPID, err
 	}
+
+	system.Send(NewEnvelope(startingActor{}, mailboxPID))
 
 	return mailboxPID, nil
 }
@@ -51,24 +51,13 @@ func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, 
 		}()
 
 		//Setup basic actor context
-		actorContext := NewActorContext(context.Background(), system, prop, mailboxPID)
+		actorContext := NewActorContext(system, prop, mailboxPID)
 
-		system.SendSystemMessage(actorContext.self, SystemMessage{Type: SystemMessageStart})
+		aProcess := actorProcess{actorContext: actorContext, mailboxPID: mailboxPID, actorChan: actorChan, actor: a}
 
-		for {
-			envelope := <-actorChan
-			//Set only message and send
-			actorContext.AddEnvelope(envelope)
-			switch envelope.Message.(type) {
-			case SystemMessage:
-				actorContext.HandleSystemMessage(envelope.Message.(SystemMessage))
-				if actorContext.state == actorStop {
-					return
-				}
-			default:
-				a.Receive(*actorContext)
-			}
-		}
+		aProcess.start()
+
+		fmt.Println("Izasao sam iz jednog actor-a")
 	}()
 }
 
@@ -79,7 +68,9 @@ func startMailbox(mailbox *Mailbox) {
 				fmt.Println("Mailbox recovered, need restarting:", r)
 			}
 		}()
-		mailbox.Start()
+		mailbox.start()
+
+		fmt.Println("Izasao sam iz jednog mailbox-a")
 	}()
 }
 
@@ -95,19 +86,22 @@ func (system *ActorSystem) AddRemoteActor(remoteActorPID PID, senderChan chan En
 	system.registry.Add(remoteActorPID, senderChan)
 }
 
-func (system *ActorSystem) SendSystemMessage(receiver PID, msg SystemMessage) {
-	envelope := NewEnvelope(msg, receiver)
-	// fmt.Println("Send system message:", msg)
-	// fmt.Println("Send system message to:", receiver)
+func (system *ActorSystem) ForcefulShutdown(pid PID) {
+	envelope := NewEnvelope(forcefulShutdown{}, pid)
 	system.Send(envelope)
 }
 
-func (system *ActorSystem) ForcefulStop(pid PID) {
-	envelope := NewEnvelope(SystemMessage{Type: SystemMessageStop}, pid)
+func (system *ActorSystem) GracefulShutdown(pid PID) {
+	envelope := NewEnvelope(gracefulShutdown{}, pid)
 	system.Send(envelope)
 }
 
-func (system *ActorSystem) GracefulStop(pid PID) {
-	envelope := NewEnvelope(SystemMessage{Type: SystemMessageGracefulStop}, pid)
-	system.Send(envelope)
+func (system *ActorSystem) delete(actorPID PID) {
+	system.Send(NewEnvelope(closeMailbox{}, actorPID))
+	close(system.registry.Find(actorPID))
+	system.registry.Delete(actorPID)
+}
+
+func (system *ActorSystem) deleteWithoutSend(actorPID PID) {
+	system.registry.Delete(actorPID)
 }

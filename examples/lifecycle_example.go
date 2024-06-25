@@ -47,6 +47,17 @@ func (a *ChildActor) Receive(ctx actor.ActorContext) {
 
 			actorSystem.Send(actor.NewEnvelope("Hello from child to grandchild", grandChildPID))
 		}
+	case actor.SystemMessage:
+		switch msg.Type {
+		case actor.SystemMessageStop:
+			fmt.Println("Child actor received stop message")
+		case actor.SystemMessageGracefulStop:
+			fmt.Println("Child actor received graceful stop message")
+		case actor.SystemMessageChildTerminated:
+			fmt.Println("Child actor received child terminated message")
+		case actor.SystemMessageStart:
+			fmt.Println("Child actor received start message")
+		}
 	}
 }
 

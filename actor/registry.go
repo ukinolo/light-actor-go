@@ -1,6 +1,7 @@
 package actor
 
 import (
+	"fmt"
 	"sync"
 )
 
@@ -24,4 +25,14 @@ func (r *Registry) Find(pid PID) chan Envelope {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	return r.mapping[pid]
+}
+
+func (r *Registry) Remove(pid PID) error {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if _, exists := r.mapping[pid]; exists {
+		delete(r.mapping, pid)
+		return nil
+	}
+	return fmt.Errorf("PID not found: %v", pid)
 }

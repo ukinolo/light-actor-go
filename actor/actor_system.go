@@ -47,6 +47,7 @@ func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, 
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("Actor recovered, need restarting:", r)
+				//TODO handle failure
 			}
 		}()
 
@@ -56,8 +57,6 @@ func startActor(a Actor, system *ActorSystem, prop *ActorProps, mailboxPID PID, 
 		aProcess := actorProcess{actorContext: actorContext, mailboxPID: mailboxPID, actorChan: actorChan, actor: a}
 
 		aProcess.start()
-
-		fmt.Println("Izasao sam iz jednog actor-a")
 	}()
 }
 
@@ -66,11 +65,10 @@ func startMailbox(mailbox *Mailbox) {
 		defer func() {
 			if r := recover(); r != nil {
 				fmt.Println("Mailbox recovered, need restarting:", r)
+				//TODO handle failure
 			}
 		}()
 		mailbox.start()
-
-		fmt.Println("Izasao sam iz jednog mailbox-a")
 	}()
 }
 

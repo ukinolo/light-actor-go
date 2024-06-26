@@ -1,9 +1,5 @@
 package actor
 
-import (
-	"fmt"
-)
-
 type mailboxState int32
 
 const (
@@ -39,57 +35,6 @@ func (m *Mailbox) getEnvelope() Envelope {
 		m.queue = m.queue[1:]
 	}()
 	return m.queue[0]
-}
-
-func (m *Mailbox) Start() {
-	m.state = mailboxRunning
-	var newEnvelope Envelope
-	var haveReady bool = false
-	getNewestEnvelope := func() Envelope {
-		if !haveReady {
-			haveReady = true
-			if len(m.queue) > 0 {
-				newEnvelope = m.getEnvelope()
-			} else {
-				newEnvelope = <-m.mailboxChan
-			}
-			m.handleEnvelope(&newEnvelope)
-		}
-		return newEnvelope
-	}
-	for {
-		select {
-		case m.actorChan <- getNewestEnvelope():
-			haveReady = false
-			if m.state == mailboxForceShutdown || m.state == mailboxGraceShutdown {
-				m.delete()
-				return
-			}
-		case envelope := <-m.mailboxChan:
-			fmt.Println("Pozvao sam handle iz toga da cu da baferujem")
-			m.handleEnvelope(&envelope)
-			if m.state == mailboxForceShutdown {
-				m.actorChan <- NewEnvelope(forcefulShutdown{}, PID{})
-				m.state = mailboxForceShutdown
-				m.delete()
-				return
-			}
-			if m.state == mailboxStopping {
-				switch envelope.Message.(type) {
-				case childTerminated:
-					m.buffer(envelope)
-				case gracefulShutdown:
-					m.buffer(envelope)
-				case forcefulShutdown:
-					m.actorChan <- NewEnvelope(forcefulShutdown{}, PID{})
-					m.state = mailboxForceShutdown
-					return
-				}
-			} else {
-				m.buffer(envelope)
-			}
-		}
-	}
 }
 
 func (m *Mailbox) start() {

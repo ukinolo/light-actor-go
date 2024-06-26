@@ -1,6 +1,5 @@
 package actor
 
-// Define the actorState constants
 type actorState int32
 
 const (
@@ -9,7 +8,6 @@ const (
 	actorStopping
 )
 
-// ActorContext holds the state and context of an actor
 type ActorContext struct {
 	actorSystem *ActorSystem
 	props       *ActorProps
@@ -19,7 +17,6 @@ type ActorContext struct {
 	self        PID
 }
 
-// NewActorContext creates and initializes a new actorContext
 func NewActorContext(actorSystem *ActorSystem, props *ActorProps, self PID) *ActorContext {
 	context := new(ActorContext)
 	context.props = props
@@ -50,7 +47,6 @@ func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (PID, erro
 	return pid, nil
 }
 
-// Send message
 func (ctx *ActorContext) Send(message interface{}, receiver PID) {
 	sendEnvelope := NewEnvelope(message, receiver)
 	ctx.actorSystem.Send(sendEnvelope)
@@ -60,12 +56,10 @@ func (ctx *ActorContext) Message() interface{} {
 	return ctx.envelope.Message
 }
 
-// Message returns the current message being processed
 func (ctx *ActorContext) Envelope() Envelope {
 	return ctx.envelope
 }
 
-// State returns the current state of the actor
 func (ctx *ActorContext) State() actorState {
 	return ctx.state
 }

@@ -1,7 +1,6 @@
 package cluster
 
 import (
-	"fmt"
 	"light-actor-go/actor"
 	"strings"
 )
@@ -21,11 +20,6 @@ func (ConnectionActor *ConnectionActor) Receive(context *actor.ActorContext) {
 	case actor.ActorStarted:
 
 	case *ActorCreated:
-		fmt.Println("Dosao je actorCreated")
-		fmt.Printf("Poruka je %v\n", msg)
-		for i, v := range ConnectionActor.registry.mapping {
-			fmt.Printf("mapping[%v]=%v\n", i, v)
-		}
 		pid, ok := ConnectionActor.registry.GetPid(strings.Split(msg.Name, "_")[0])
 		if !ok {
 			return
@@ -35,10 +29,6 @@ func (ConnectionActor *ConnectionActor) Receive(context *actor.ActorContext) {
 			name:    msg.Name,
 			created: true,
 		})
-		fmt.Println("Ovo je posle")
-		for i, v := range ConnectionActor.registry.mapping {
-			fmt.Printf("mapping[%v]=%v\n", i, v)
-		}
 
 	case actor.ActorStoped:
 

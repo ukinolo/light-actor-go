@@ -59,7 +59,11 @@ func (r *RemoteReceiver) ReceiveMessage(context context.Context, envelope *Envel
 	if (actorPID == actor.PID{}) {
 		return &Empty{}, errors.New("no actor with name " + envelope.Receiver + " exists")
 	}
-	actorEnvelope := actor.NewEnvelope(envelope.Message, actorPID)
+	msg, err := envelope.Message.UnmarshalNew()
+	if err != nil {
+		return &Empty{}, err
+	}
+	actorEnvelope := actor.NewEnvelope(msg, actorPID)
 	r.actorSystem.Send(actorEnvelope)
 	return &Empty{}, nil
 }

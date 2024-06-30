@@ -1,0 +1,54 @@
+// swim_message.proto
+syntax = "proto3";
+
+package cluster;
+
+option go_package = ".;cluster";
+
+enum SwimState {
+  Alive = 0;
+	Suspicious = 1;
+	Dead = 2;
+}
+
+message SwimPing {
+	string sender = 1;
+	SwimExtraInfo extras = 2;
+}
+
+message SwimAck {
+	string sender = 1; 
+	SwimState state = 2;
+	int32 version = 3;
+	SwimExtraInfo extras = 4;
+}
+
+message SwimIndirectPing {
+	string receiver = 1;     
+	string intermediate = 2;
+	string sender = 3;
+}
+
+message SwimIndirectAck {
+	string receiver = 1; 
+	string sender = 2;   
+	SwimState state = 3;    
+	int32 version = 4;  
+}
+
+message SwimExtraInfo {
+	string member_address = 1;
+	SwimState member_state = 2;
+	int32 version = 3;
+	int32 ttl = 4;
+}
+
+message SwimNewGossiper {
+  string member_address = 1;
+	SwimState member_state = 2;
+	int32 version = 3;
+}
+
+message StringMessage {
+  string value = 1;
+}

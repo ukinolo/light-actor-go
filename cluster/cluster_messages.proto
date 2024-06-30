@@ -1,0 +1,28 @@
+// cluster_message.proto
+syntax = "proto3";
+
+package cluster;
+
+import "google/protobuf/any.proto";
+
+option go_package = ".;cluster";
+
+message createActor {
+	string actorName = 1;
+	string connectionAddress = 2;
+	bool forwarded = 3;
+}
+
+message deleteActor {
+	string actorName = 1;
+}
+
+message messageActor {
+	string actorName = 1;
+	google.protobuf.Any message = 2;
+}
+
+message actorCreated {
+	string address = 1;
+	string name = 2;
+}

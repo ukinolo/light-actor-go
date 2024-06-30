@@ -52,6 +52,10 @@ func (ctx *ActorContext) Send(message interface{}, receiver PID) {
 	ctx.actorSystem.Send(sendEnvelope)
 }
 
+func (ctx *ActorContext) GracefulShutdown(pid PID) {
+	ctx.actorSystem.GracefulShutdown(pid)
+}
+
 func (ctx *ActorContext) Message() interface{} {
 	return ctx.envelope.Message
 }

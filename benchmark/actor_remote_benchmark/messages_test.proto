@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package messages;
+
+option go_package = ".;remote_benchmark_test";
+
+message StringMessage {
+  string value = 1;
+}

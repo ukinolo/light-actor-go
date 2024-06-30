@@ -1,12 +1,12 @@
 package actor
 
 type ActorProps struct {
-	parent *PID
+	Parent *PID
 }
 
-func NewActorProps(parent *PID) *ActorProps {
+func NewActorProps(Parent *PID) *ActorProps {
 	props := new(ActorProps)
-	props.parent = parent
+	props.Parent = Parent
 	return props
 }
 
@@ -17,12 +17,12 @@ func ConfigureActorProps(props ...ActorProps) *ActorProps {
 	return defaultConfig()
 }
 
-func (prop *ActorProps) AddParent(parent *PID) {
-	prop.parent = parent
+func (prop *ActorProps) AddParent(Parent *PID) {
+	prop.Parent = Parent
 }
 
 func defaultConfig() *ActorProps {
 	props := new(ActorProps)
-	props.parent = nil
+	props.Parent = nil
 	return props
 }

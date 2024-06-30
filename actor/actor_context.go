@@ -21,7 +21,7 @@ const (
 type ActorContext struct {
 	actorSystem *ActorSystem
 	ctx         context.Context
-	props       *ActorProps
+	Props       *ActorProps
 	envelope    Envelope
 	state       actorState
 	children    map[uuid.UUID]PID
@@ -30,10 +30,10 @@ type ActorContext struct {
 }
 
 // NewActorContext creates and initializes a new actorContext
-func NewActorContext(ctx context.Context, actorSystem *ActorSystem, props *ActorProps, self PID) *ActorContext {
+func NewActorContext(ctx context.Context, actorSystem *ActorSystem, Props *ActorProps, self PID) *ActorContext {
 	context := new(ActorContext)
 	context.ctx = ctx
-	context.props = props
+	context.Props = Props
 	context.state = actorStart
 	context.actorSystem = actorSystem
 	context.self = self
@@ -47,8 +47,8 @@ func (ctx *ActorContext) AddEnvelope(envelope Envelope) {
 }
 
 // Spawns child actor
-func (ctx *ActorContext) SpawnActor(actor Actor, props ...ActorProps) (PID, error) {
-	prop := ConfigureActorProps(props...)
+func (ctx *ActorContext) SpawnActor(actor Actor, Props ...ActorProps) (PID, error) {
+	prop := ConfigureActorProps(Props...)
 	prop.AddParent(&ctx.self)
 
 	// pid, err := NewPID()
@@ -155,8 +155,8 @@ func (ctx *ActorContext) GracefulStop() {
 		ctx.mu.RUnlock()
 	} else {
 		ctx.mu.RUnlock()
-		if ctx.props.parent != nil {
-			ctx.actorSystem.SendSystemMessage(*ctx.props.parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
+		if ctx.Props.Parent != nil {
+			ctx.actorSystem.SendSystemMessage(*ctx.Props.Parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
 		}
 		// fmt.Println("No children, actor stopped", ctx.self)
 		ctx.actorSystem.RemoveActor(ctx.self, SystemMessage{Type: DeleteMailbox})
@@ -174,8 +174,8 @@ func (ctx *ActorContext) ChildTerminated(child PID) {
 	ctx.mu.RLock()
 	if len(ctx.children) == 0 && ctx.state == actorStopping {
 		ctx.mu.RUnlock()
-		if ctx.props.parent != nil {
-			ctx.actorSystem.SendSystemMessage(*ctx.props.parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
+		if ctx.Props.Parent != nil {
+			ctx.actorSystem.SendSystemMessage(*ctx.Props.Parent, SystemMessage{Type: SystemMessageChildTerminated, Extras: ctx.self})
 		}
 		ctx.actorSystem.RemoveActor(ctx.self, SystemMessage{Type: DeleteMailbox})
 		ctx.state = actorStop

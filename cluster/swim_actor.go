@@ -48,6 +48,12 @@ func (SwimActor *SwimActor) Receive(ctx *actor.ActorContext) {
 
 	case *SwimPing:
 		respond := SwimActor.swimGossiper.HandlePing(msg)
+		if SwimActor.swimGossiper.memberList.Find(msg.Sender).version == 0 {
+			SwimActor.clusterSender.SendMessage(&SwimPing{
+				Sender: SwimActor.selfAddress,
+				Extras: SwimActor.swimGossiper.extraInfo,
+			}, msg.Sender, "gossip")
+		}
 		SwimActor.clusterSender.SendMessage(respond, msg.Sender, "gossip")
 
 	case *SwimIndirectPing:
@@ -81,7 +87,7 @@ func (SwimActor *SwimActor) Receive(ctx *actor.ActorContext) {
 			MemberState:   SwimState_Alive,
 			Version:       int32(SwimActor.swimGossiper.selfVersion),
 		}, msg.address, "gossip")
-		SwimActor.swimGossiper.memberList.Add(msg.address, ClusterInfo{state: SwimState_Alive, version: 0})
+		SwimActor.swimGossiper.memberList.Add(msg.address, ClusterInfo{state: SwimState_Alive, version: 1})
 		SwimActor.swimGossiper.healthyAddresses = append(SwimActor.swimGossiper.healthyAddresses, msg.address)
 
 	case *SwimNewGossiper:
@@ -96,19 +102,21 @@ func (SwimActor *SwimActor) Receive(ctx *actor.ActorContext) {
 		//TODO handle random messages
 	}
 	fmt.Printf("%v:Doslo je %T**********************************************\n", SwimActor.selfAddress, ctx.Message())
-	// fmt.Println("Trenutno stanje je ovakvo////////////////////////////////////////////")
-	// fmt.Println("MemberList je ovo:")
-	// for i, v := range SwimActor.swimGossiper.memberList.mapping {
-	// 	fmt.Printf("Adresa %v ima vrednost %v\n", i, v)
-	// }
+	fmt.Println("Trenutno stanje je ovakvo////////////////////////////////////////////")
+	fmt.Printf("%v:MemberList je ovo:\n", SwimActor.selfAddress)
+	for i, v := range SwimActor.swimGossiper.memberList.mapping {
+		fmt.Printf("Adresa %v ima vrednost %v\n", i, v)
+	}
 	// fmt.Println("No responses su:")
 	// for i, v := range SwimActor.swimGossiper.noResponseAddresses {
 	// 	fmt.Printf("Adresa %v ima vrednost %v\n", i, v)
 	// }
-	// fmt.Println("HealtyAddress su:")
+	// fmt.Printf("%v:HealtyAddress su:\n", SwimActor.selfAddress)
 	// for i, v := range SwimActor.swimGossiper.healthyAddresses {
 	// 	fmt.Printf("Adresa %v ima vrednost %v\n", i, v)
 	// }
 	// fmt.Println("Self version je:", SwimActor.swimGossiper.selfVersion)
-	// fmt.Println("Extra info je: ", SwimActor.swimGossiper.extraInfo)
+	// if SwimActor.swimGossiper.extraInfo != nil {
+	// 	fmt.Println("Extra info je: ", *(SwimActor.swimGossiper.extraInfo))
+	// }
 }

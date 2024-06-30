@@ -41,7 +41,8 @@ func (memberList *MemberList) Delete(address string, ci ClusterInfo) {
 func (memberList *MemberList) Update(address string, ci ClusterInfo) {
 	memberList.sm.Lock()
 	defer memberList.sm.Unlock()
-	if (memberList.mapping[address] == ClusterInfo{}) || memberList.mapping[address].version < ci.version {
+	current, ok := memberList.mapping[address]
+	if !ok || memberList.mapping[address].version < current.version {
 		memberList.mapping[address] = ci
 	}
 }

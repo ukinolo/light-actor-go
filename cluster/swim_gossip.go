@@ -1,5 +1,7 @@
 package cluster
 
+import "fmt"
+
 // type SwimState int32
 
 // const (
@@ -81,8 +83,8 @@ func NewSwimGossiper(memberList *MemberList, selfAddress string) *SwimGossiper {
 		nextToPing:          0,
 		noResponseAddresses: make(map[string]RespondWaitInfo),
 		selfAddress:         selfAddress,
-		selfVersion:         0,
-		deadInterval:        5,
+		selfVersion:         1,
+		deadInterval:        5, //TODO make parameter
 	}
 }
 
@@ -100,12 +102,28 @@ func (SwimGossiper *SwimGossiper) HandlePing(ping *SwimPing) *SwimAck {
 
 func (SwimGossiper *SwimGossiper) HandleAck(ack *SwimAck) {
 	SwimGossiper.memberList.Update(ack.Sender, ClusterInfo{state: ack.State, version: int(ack.Version)})
+	//TODO change this
+	//This is necesary because I can ping someone who is not in my member list if he pinged me
+	//So I need to update healthyAddresses list if he is not in there
+	if ack.GetState() == SwimState_Alive {
+		found := false
+		for _, v := range SwimGossiper.healthyAddresses {
+			if v == ack.Sender {
+				found = true
+				break
+			}
+		}
+		if !found {
+			fmt.Println("Pomoglo je 0000000000000000000000000000000000000000000000000000000000000000000")
+			SwimGossiper.healthyAddresses = append(SwimGossiper.healthyAddresses, ack.Sender)
+		}
+	}
 
 	delete(SwimGossiper.noResponseAddresses, ack.Sender)
 
 	SwimGossiper.handleExtraInfo(ack.Extras)
 
-	if SwimGossiper.extraInfo != nil && SwimGossiper.extraInfo.Ttl <= 0 {
+	if SwimGossiper.extraInfo != nil && SwimGossiper.extraInfo.Ttl <= 1 {
 		SwimGossiper.extraInfo = &SwimExtraInfo{
 			MemberAddress: ack.Sender,
 			MemberState:   ack.State,
@@ -177,7 +195,7 @@ func (SwimGossiper *SwimGossiper) HandleNewGossiper(newGossiper *SwimNewGossiper
 		MemberAddress: newGossiper.MemberAddress,
 		MemberState:   newGossiper.MemberState,
 		Version:       newGossiper.Version,
-		Ttl:           10, //TODO change to parameter
+		Ttl:           6, //TODO change to parameter
 	}
 }
 
@@ -255,18 +273,18 @@ func (SwimGossiper *SwimGossiper) handleExtraInfo(extra *SwimExtraInfo) {
 	}
 
 	ci := SwimGossiper.memberList.Find(extra.MemberAddress)
-	if ci.version >= int(extra.Version) {
+	if ci.version > int(extra.Version) {
 		return
 	}
 	SwimGossiper.memberList.Update(extra.MemberAddress, ClusterInfo{
 		state:   extra.MemberState,
 		version: int(extra.Version),
 	})
-	if extra.MemberState != ci.state {
-		if extra.MemberState == SwimState_Alive {
+	if ci.version == 0 || extra.GetMemberState() != ci.state {
+		if extra.GetMemberState() == SwimState_Alive {
 			delete(SwimGossiper.noResponseAddresses, extra.MemberAddress)
 			SwimGossiper.healthyAddresses = append(SwimGossiper.healthyAddresses, extra.MemberAddress)
-		} else if extra.MemberState == SwimState_Dead {
+		} else if extra.GetMemberState() == SwimState_Dead {
 			for i, v := range SwimGossiper.healthyAddresses {
 				if v == extra.MemberAddress {
 					SwimGossiper.healthyAddresses = append(SwimGossiper.healthyAddresses[:i], SwimGossiper.healthyAddresses[i+1:]...)
@@ -274,8 +292,5 @@ func (SwimGossiper *SwimGossiper) handleExtraInfo(extra *SwimExtraInfo) {
 			}
 			delete(SwimGossiper.noResponseAddresses, extra.MemberAddress)
 		}
-	}
-	if SwimGossiper.extraInfo == nil || extra.Ttl > SwimGossiper.extraInfo.Ttl {
-		SwimGossiper.extraInfo = extra
 	}
 }

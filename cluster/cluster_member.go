@@ -30,7 +30,7 @@ func (cMember *ClusterMember) Start() {
 		return
 	}
 
-	clusterPID, err := cMember.system.SpawnActor(NewClusterActor(memberList, &cMember.registry, cMember.selfAddress)) //TODO add
+	clusterPID, err := cMember.system.SpawnActor(NewClusterActor(memberList, &cMember.registry, cMember.selfAddress))
 	if err != nil {
 		return
 	}
